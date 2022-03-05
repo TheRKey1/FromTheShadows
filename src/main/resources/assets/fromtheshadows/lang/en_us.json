@@ -1,30 +1,7 @@
 {
 
   "entity.fromtheshadows.nehemoth": "Nehemoth",
-  "entity.fromtheshadows.cultist": "Cultist",
-
-  "item.fromtheshadows.nehemoth_spawn_egg": "Nehemoth spawn egg",
-  "item.fromtheshadows.cultist_spawn_egg": "Cultist spawn egg",
-  "item.fromtheshadows.nehemoth_embryo": "Nehemoth Embryo",
-  "item.fromtheshadows.corrupted_heart": "Corrupted Heart",
-  "item.fromtheshadows.nehemoth_slayer": "Nehemoth Slayer",
-  "item.fromtheshadows.nehemoth_chestplate": "Nehemoth Chestplate",
 
 
-  "fromtheshadows.rare.text": "Rare",
-  "fromtheshadows.corrupted_heart.text": "The pulse is still beating.",
-  "fromtheshadows.nehemoth_embryo.text": "It keeps wriggling.",
-  "fromtheshadows.nehemoth_slayer.text": "This weapon was born to destroy them...",
-  "fromtheshadows.nehemoth_chestplate.text": "heart is still beating slowly.",
-  "fromtheshadows.nehemoth_chestplate.text2": "It seems to be looking for something...",
-
-
-  "text.autoconfig.fromtheshadows.title": "From the shadow Config",
-  "text.autoconfig.fromtheshadows.option.spawn": "Spawn Settings",
-  "text.autoconfig.fromtheshadows.option.spawn.cultist_spawn_weight": "Cultist Spawn Weight",
-  "text.autoconfig.fromtheshadows.option.spawn.cultist_min_group": "Cultist Min Spawn Group",
-  "text.autoconfig.fromtheshadows.option.spawn.cultist_max_group": "Cultist Max Spawn Group",
-  "text.autoconfig.fromtheshadows.option.spawn.vespa_queen_spawn_weight": "Nehemoth Spawn Weight",
-  "text.autoconfig.fromtheshadows.option.spawn.vespa_queen_min_group": "Nehemoth Min Spawn Group",
-  "text.autoconfig.fromtheshadows.option.spawn.vespa_queen_max_group": "Nehemoth Max Spawn Group"
+  "item.fromtheshadows.nehemoth_spawn_egg": "Nehemoth spawn egg"
 }

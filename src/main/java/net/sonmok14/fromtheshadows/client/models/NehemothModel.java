@@ -31,10 +31,12 @@ public class NehemothModel extends AnimatedGeoModel<NehemothEntity> {
 
     public void setLivingAnimations(NehemothEntity entity, Integer uniqueID, AnimationEvent customPredicate) {
         super.setLivingAnimations(entity, uniqueID, customPredicate);
+        IBone root = this.getAnimationProcessor().getBone("root");
         IBone head = this.getAnimationProcessor().getBone("headrotate");
         EntityModelData extraData = (EntityModelData) customPredicate.getExtraDataOfType(EntityModelData.class).get(0);
         head.setRotationX(extraData.headPitch * 0.01F);
         head.setRotationY(extraData.netHeadYaw * 0.01F);
         head.setRotationX(-1F);
+
     }
 }

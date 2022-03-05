@@ -1,7 +1,7 @@
 
 modLoader="javafml" #mandatory
-loaderVersion="[40,)" #mandatory
-license="All rights reserved"
+loaderVersion="[39,)" #mandatory
+license="MIT"
 
 [[mods]] #mandatory
 modId="fromtheshadows" #mandatory
@@ -16,12 +16,12 @@ Against the evil of ancient evil!
 [[dependencies.fromtheshadows]] #optional
     modId="forge" #mandatory
     mandatory=true #mandatory
-    versionRange="[40,)" #mandatory
+    versionRange="[39,)" #mandatory
     ordering="NONE"
     side="BOTH"
 [[dependencies.fromtheshadows]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.18.2,1.19)"
+    versionRange="[1.18.1,1.19)"
     ordering="NONE"
     side="BOTH"
