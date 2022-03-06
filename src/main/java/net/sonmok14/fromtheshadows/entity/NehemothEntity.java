@@ -20,16 +20,18 @@ import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.IronGolem;
-import net.minecraft.world.entity.monster.AbstractIllager;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Ravager;
+import net.minecraft.world.entity.monster.Vindicator;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.EnderpearlItem;
+import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
@@ -224,7 +226,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
             ++this.attacktick;
         }
         if(this.getTarget() != null ) {
-            if (this.attacktick == 17 && this.attackID == 2 && this.hasPassenger(getTarget())) {
+            if (this.attacktick == 15 && this.attackID == 2 && this.hasPassenger(getTarget())) {
                 getTarget().hurt(DamageSource.mobAttack(this), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
                 if (this.attackID == 2 && !getTarget().isBlocking()) {
                     this.level.playSound((Player) null, this.getX(), this.getY(), this.getZ(), SoundEvents.STRIDER_EAT, this.getSoundSource(), 2F, 0.3F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
@@ -236,11 +238,16 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                 if (this.attackID == 2 && getTarget().isBlocking()) {
                     blockedByShield(this);
                     ejectPassengers();
-                    attacktick = 21;
+                    attacktick = 19;
                 }
             }
             if(this.attackID == 4 && isOnGround() && this.attacktick > 2 && isShiftKeyDown())
             {
+                if (getTarget() instanceof Player) {
+                    Player player = (Player) getTarget();
+                    if (player.isBlocking())
+                        player.disableShield(true);
+                }
                 setShiftKeyDown(false);
                 ScreenShakeEntity.ScreenShake(level, this.position(), 15, 0.2f, 0, 10);
                 this.playSound(SoundEvents.GENERIC_EXPLODE, 2f, 1F + this.getRandom().nextFloat() * 0.1F);
@@ -260,7 +267,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
             }
             }
 
-            if (this.attacktick == 22 && this.attackID == 1) {
+            if (this.attacktick == 10 && this.attackID == 1) {
                 meleeattack();
             }
             if(this.attackID == 3)
@@ -268,7 +275,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                 roar();
                 if(this.attacktick == 1)
                 {
-                    this.playSound(SoundRegistry.NEHEMOTH_ROAR.get(), 1f, 1F + this.getRandom().nextFloat() * 0.1F);
+                    this.playSound(SoundRegistry.NEHEMOTH_ROAR.get(), 1.5f, 1F + this.getRandom().nextFloat() * 0.1F);
                     ScreenShakeEntity.ScreenShake(level, this.position(), 20, 0.2f, 20, 10);
                 }
             }
@@ -306,7 +313,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         double d0 = p_33340_.getX() - this.getX();
         double d1 = p_33340_.getZ() - this.getZ();
         double d2 = Math.max(d0 * d0 + d1 * d1, 0.001D);
-        p_33340_.push(d0 / d2 * 4.0D, 0.2D, d1 / d2 * 4.0D);
+        p_33340_.push(d0 / d2 * 2.0D, 0.2D, d1 / d2 * 2.0D);
     }
 
     public boolean canBeControlledByRider() {
@@ -337,7 +344,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
     }
 
     private void meleeattack() {
-        float range = 4f;
+        float range = 3f;
         float arc = 60;
         List<LivingEntity> entitiesHit = this.level.getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(3.0D), NO_NEHEMOTH_AND_ALIVE);
         for (LivingEntity entityHit : entitiesHit) {
@@ -381,7 +388,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
     private void roar() {
         if (this.isAlive()) {
-            for(LivingEntity livingentity : this.level.getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0D), NO_NEHEMOTH_AND_ALIVE)) {
+            for(LivingEntity livingentity : this.level.getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(3.5D), NO_NEHEMOTH_AND_ALIVE)) {
                 if (!(livingentity instanceof NehemothEntity)) {
                     livingentity.hurt(DamageSource.mobAttack(this), 6.0F);
                 }
@@ -406,7 +413,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
     @Nullable
     @Override
     protected SoundEvent getAmbientSound() {
-        return SoundEvents.SCULK_SENSOR_HIT;
+        return SoundEvents.SCULK_CLICKING;
     }
 
     @Override
@@ -426,6 +433,15 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
     @Override
     public float getVoicePitch() {
         return 0.1F;
+    }
+
+    @Override
+    public boolean hurt(DamageSource p_21016_, float p_21017_) {
+        if(p_21016_.isProjectile())
+        {
+            p_21017_ = Math.min(1.0F, p_21017_);
+        }
+        return super.hurt(p_21016_, p_21017_);
     }
 
     //tick
@@ -458,14 +474,14 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
         @Override
         public boolean canContinueToUse() {
-            return nehemoth.attacktick < 25;
+            return nehemoth.attacktick < 23;
         }
 
 
         public void tick() {
             double dist = (double) this.nehemoth.distanceTo(attackTarget);
             stuckSpeedMultiplier = Vec3.ZERO;
-            if (nehemoth.attacktick < 25 && attackTarget.isAlive()) {
+            if (nehemoth.attacktick < 23 && attackTarget.isAlive()) {
                 nehemoth.getLookControl().setLookAt(attackTarget, 30.0F, 30.0F);
             }
 
@@ -473,7 +489,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                 meleeattack();
             }
 
-            if (nehemoth.attacktick == 22) {
+            if (nehemoth.attacktick == 20) {
                meleeattack();
             }
 
@@ -506,16 +522,16 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
         @Override
         public boolean canContinueToUse() {
-            return nehemoth.attacktick < 21;
+            return nehemoth.attacktick < 19;
         }
 
         public void tick() {
             stuckSpeedMultiplier = Vec3.ZERO;
             double dist = (double) this.nehemoth.distanceTo(attackTarget);
-            if (nehemoth.attacktick < 21 && attackTarget.isAlive()) {
+            if (nehemoth.attacktick < 19 && attackTarget.isAlive()) {
                 nehemoth.getLookControl().setLookAt(attackTarget, 30.0F, 30.0F);
             }
-            if (nehemoth.attacktick == 10 && dist <= 3) {
+            if (nehemoth.attacktick == 6 && dist <= 3) {
 
                 attackTarget.startRiding(nehemoth, true);
             }
@@ -524,7 +540,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                 attackTarget.hurt(DamageSource.mobAttack(nehemoth), (float) nehemoth.getAttributeValue(Attributes.ATTACK_DAMAGE));
             }
 
-            if (nehemoth.attacktick == 20) {
+            if (nehemoth.attacktick == 18) {
                 ejectPassengers();
             }
 
@@ -542,18 +558,17 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
         public boolean canUse() {
             this.attackTarget = this.nehemoth.getTarget();
-            return attackTarget != null && this.nehemoth.attackID == 0 && distanceTo(attackTarget)  > 5.0D && isOnGround() && random.nextInt(22) == 0;
+            return attackTarget != null && this.nehemoth.attackID == 0 && (distanceTo(attackTarget) > 5.0D || nehemoth.getY() < attackTarget.getY() + 3.0D && attackTarget.isOnGround() || attackTarget.isBlocking()) && isOnGround() && random.nextInt(22) == 0;
         }
 
         public void start() {
-            this.nehemoth.setAttackID(4);
+            this.nehemoth.setAttackID(SMASH_ATTACK);
         }
 
         public void stop() {
             this.nehemoth.setAttackID(0);
             this.attackTarget = null;
         }
-
 
         @Override
         public boolean canContinueToUse() {
@@ -564,12 +579,25 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
             stuckSpeedMultiplier = Vec3.ZERO;
             double dist = (double) this.nehemoth.distanceTo(attackTarget);
             if (nehemoth.attacktick < 31 && attackTarget.isAlive()) {
+                yBodyRot = yHeadRot;
                 nehemoth.getLookControl().setLookAt(attackTarget, 30.0F, 30.0F);
             }
+
             if (nehemoth.attacktick == 2) {
                 setJumping(true);
                 setShiftKeyDown(true);
-                setDeltaMovement((attackTarget.getX() - getX()) * 0.2D, 0.8D, (attackTarget.getZ() - getZ()) * 0.2D);
+                if(nehemoth.getY() < attackTarget.getY() + 3.0D && attackTarget.isOnGround())
+                {
+                    setDeltaMovement((attackTarget.getX() - getX()) * 0.2D, 1.1D, (attackTarget.getZ() - getZ()) * 0.2D);
+                }
+                if(nehemoth.getY() >= attackTarget.getY())
+                {
+                    setDeltaMovement((attackTarget.getX() - getX()) * 0.2D, 0.8D, (attackTarget.getZ() - getZ()) * 0.2D);
+                }
+            }
+            if(nehemoth.attacktick > 2 && nehemoth.attacktick < 15 && isOnGround())
+            {
+                nehemoth.attacktick = 31;
             }
 
             if (isOnGround() && nehemoth.attacktick > 2) {
@@ -595,11 +623,11 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
         public boolean canUse() {
             this.attackTarget = this.nehemoth.getTarget();
-            return attackTarget != null && this.nehemoth.attackID == 0 && distanceTo(attackTarget)  > 6.0D && isOnGround() && random.nextInt(52) == 0;
+            return attackTarget != null && this.nehemoth.attackID == 0 && distanceTo(attackTarget)  > 9.0D && isOnGround() && random.nextInt(52) == 0;
         }
 
         public void start() {
-            this.nehemoth.setAttackID(3);
+            this.nehemoth.setAttackID(ROAR_ATTACK);
         }
 
         public void stop() {
