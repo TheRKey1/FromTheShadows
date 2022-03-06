@@ -1,5 +1,6 @@
 package net.sonmok14.fromtheshadows.client.models;
 
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.sonmok14.fromtheshadows.Fromtheshadows;
@@ -26,6 +27,10 @@ public class NehemothModel extends AnimatedGeoModel<NehemothEntity> {
 
     @Override
     public ResourceLocation getTextureLocation(NehemothEntity entity) {
+        if(entity.isSilent())
+        {
+            return new ResourceLocation(Fromtheshadows.MODID, "textures/entity/nehemoth_stone.png");
+        }
         return new ResourceLocation(Fromtheshadows.MODID, "textures/entity/nehemoth.png");
     }
 

@@ -13,24 +13,19 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.FloatGoal;
-import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
-import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Vindicator;
+import net.minecraft.world.entity.monster.Skeleton;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
-import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.EnderpearlItem;
-import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -61,7 +56,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
     public static final byte BITE_ATTACK = 2;
     public static final byte ROAR_ATTACK = 3;
     public static final byte SMASH_ATTACK = 4;
-    public static final byte BLINK_ATTACK = 5;
+    public static final byte GUARD_ATTACK = 5;
 
     public NehemothEntity(EntityType<? extends NehemothEntity> type, Level world) {
         super(type, world);
@@ -82,58 +77,65 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                 .add(Attributes.ATTACK_SPEED, 2.0D);
     }
 
-
-    //animation
-
     private AnimationFactory factory = new AnimationFactory(this);
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
-       if(isAlive())
-        {  if (event.isMoving() && isAggressive() && attackID == 0) {
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.run", true));
-            return PlayState.CONTINUE;
-        }
+        if (!isSilent()) {
+                if (event.isMoving() && isAggressive() && attackID == 0) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.run", true));
+                return PlayState.CONTINUE;
+            }
             if (attackID == 3) {
                 event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.roar", true));
                 return PlayState.CONTINUE;
             }
-        if (!this.isImmobile()) {
-            if (attackID == 1) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.meleeattack", true));
+            if (!this.isImmobile()) {
+                if (attackID == 1) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.meleeattack", true));
+                    return PlayState.CONTINUE;
+                }
+
+                if (attackID == 2) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.attack", true));
+                    return PlayState.CONTINUE;
+                }
+            }
+            if (attackID == 4 && isOnGround() && this.attacktick > 8) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.smash", true));
                 return PlayState.CONTINUE;
             }
 
-            if (attackID == 2) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.attack", true));
+            if (attackID == 4 && !isOnGround()) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.jump", true));
                 return PlayState.CONTINUE;
             }
-        }
-        if(attackID == 4 && isOnGround())
-        {
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.smash", true));
-            return PlayState.CONTINUE;
-        }
 
-        if(attackID == 4 && !isOnGround())
-        {
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.jump", true));
-            return PlayState.CONTINUE;
-        }
+            if (attackID == 5 && attacktick < 55) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.guard", true));
+                return PlayState.CONTINUE;
+            }
+            if (attackID == 5 && attacktick > 55) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.bulk", true));
+                return PlayState.CONTINUE;
+            }
 
+            if (isImmobile()) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.stun", true));
+                return PlayState.CONTINUE;
+            }
 
+            if (event.isMoving()) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.walk", true));
+                return PlayState.CONTINUE;
+            }
 
-        if (isImmobile()) {
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.stun", true));
-            return PlayState.CONTINUE;
-        }
-
-        if (event.isMoving()) {
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.walk", true));
-            return PlayState.CONTINUE;
-        }
-    }
-        if(!event.isMoving() && attackID == 0){
-            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.ldle", true));
+            if (!event.isMoving() && attackID == 0) {
+                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.ldle", true));
+                return PlayState.CONTINUE;
+                }
+            }
+        else if (isSilent()) {
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.stop1", true));
             return PlayState.CONTINUE;
         }
         return PlayState.CONTINUE;
@@ -179,6 +181,8 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         this.goalSelector.addGoal(0, new SmashGoal(this));
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(0, new RoarGoal(this));
+        this.goalSelector.addGoal(0, new DoNothingGoal());
+        this.goalSelector.addGoal(0, new GuardandRevengeGoal(this));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0F));
         this.goalSelector.addGoal(10, new LookAtPlayerGoal(this, Mob.class, 8.0F));
         this.targetSelector.addGoal(5, new NearestAttackableTargetGoal<>(this, Raider.class, true));
@@ -221,6 +225,10 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
     @Override
     public void tick() {
         super.tick();
+        if(level.isNight())
+        {
+            setSilent(false);
+        }
         ++this.tickCount;
         if (this.attackID != 0) {
             ++this.attacktick;
@@ -241,7 +249,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                     attacktick = 19;
                 }
             }
-            if(this.attackID == 4 && isOnGround() && this.attacktick > 2 && isShiftKeyDown())
+            if(this.attackID == 4 && isOnGround() && isShiftKeyDown() && this.attacktick > 8)
             {
                 if (getTarget() instanceof Player) {
                     Player player = (Player) getTarget();
@@ -264,6 +272,16 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                         this.level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, block), this.getX() + extraX, this.getY() + extraY, this.getZ() + extraZ, DeltaMovementX, DeltaMovementY, DeltaMovementZ);
                     }
                 }
+            }
+
+            if (this.attacktick == 2) {
+
+            }
+            if(attackID == 5 && this.attacktick == 55)
+            {
+                roar();
+                ScreenShakeEntity.ScreenShake(level, this.position(), 15, 0.2f, 0, 10);
+                this.playSound(SoundRegistry.NEHEMOTH_ROAR.get(), 1.5f, 1F + this.getRandom().nextFloat() * 0.1F);
             }
             }
 
@@ -321,6 +339,11 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
     }
 
 
+    @Override
+    public boolean isPushable() {
+        return false;
+    }
+
     protected void blockedByShield(LivingEntity p_33361_) {
             if (this.random.nextDouble() < 0.5D && this.attackID == 2) {
                 this.stunnedTick = 40;
@@ -373,7 +396,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         if (this.hasPassenger(passenger)) {
             float radius = 0.5F;
             float angle = 0.017453292F * this.yBodyRot;
-            double extraX = (double)(radius * Mth.sin((float)(3.141592653589793D + (double)angle)));
+            double extraX = (double)(radius * Mth.sin((float)(3.141592653589792D + (double)angle)));
             double extraZ = (double)(radius * Mth.cos(angle));
             passenger.setPos(this.getX() + extraX, this.getY() - 0.17000000178813934D, this.getZ() + extraZ);
         }
@@ -441,6 +464,17 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         {
             p_21017_ = Math.min(1.0F, p_21017_);
         }
+        if(this.attackID == 5 && this.attacktick < 55)
+        {
+            return false;
+        }
+
+        if(level.isDay())
+        {
+            this.playSound(SoundEvents.SCULK_SENSOR_HIT, 1f, 1F + this.getRandom().nextFloat() * 0.3F);
+            return false;
+        }
+
         return super.hurt(p_21016_, p_21017_);
     }
 
@@ -558,7 +592,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
         public boolean canUse() {
             this.attackTarget = this.nehemoth.getTarget();
-            return attackTarget != null && this.nehemoth.attackID == 0 && (distanceTo(attackTarget) > 5.0D || nehemoth.getY() < attackTarget.getY() + 3.0D && attackTarget.isOnGround() || attackTarget.isBlocking()) && isOnGround() && random.nextInt(22) == 0;
+            return attackTarget != null && this.nehemoth.attackID == 0 && (distanceTo(attackTarget) > 5.0D || (nehemoth.getY() < attackTarget.getY() + 3.0D && attackTarget.isOnGround())) && isOnGround() && random.nextInt(38) == 0;
         }
 
         public void start() {
@@ -595,8 +629,9 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                     setDeltaMovement((attackTarget.getX() - getX()) * 0.2D, 0.8D, (attackTarget.getZ() - getZ()) * 0.2D);
                 }
             }
-            if(nehemoth.attacktick > 2 && nehemoth.attacktick < 15 && isOnGround())
+            if(nehemoth.attacktick > 2 && nehemoth.attacktick < 7 && isOnGround())
             {
+                setShiftKeyDown(false);
                 nehemoth.attacktick = 31;
             }
 
@@ -650,4 +685,65 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         }
     }
 
+
+
+    private class GuardandRevengeGoal extends Goal {
+        private final NehemothEntity nehemoth;
+        private LivingEntity attackTarget;
+
+        public GuardandRevengeGoal(NehemothEntity p_i45837_1_) {
+            this.setFlags(EnumSet.of(Flag.JUMP, Flag.LOOK, Flag.MOVE));
+            this.nehemoth = p_i45837_1_;
+        }
+        public boolean canUse() {
+            this.attackTarget = this.nehemoth.getTarget();
+            LivingEntity livingentity = this.nehemoth.getLastHurtByMob();
+            return attackTarget != null && this.nehemoth.attackID == 0 && distanceTo(attackTarget) <= 4.0D && isOnGround() && random.nextInt(22) == 0 && nehemoth.getHealth() <= 25 && nehemoth.getLastHurtByMob() != null;
+        }
+
+        public void start() {
+            this.nehemoth.setAttackID(GUARD_ATTACK);
+        }
+
+        public void stop() {
+            this.nehemoth.setAttackID(0);
+            this.attackTarget = null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return nehemoth.attacktick < 80;
+        }
+
+        public void tick() {
+            stuckSpeedMultiplier = Vec3.ZERO;
+            double dist = (double) this.nehemoth.distanceTo(attackTarget);
+            if (nehemoth.attacktick < 80 && attackTarget.isAlive()) {
+                yBodyRot = yHeadRot;
+                nehemoth.getLookControl().setLookAt(attackTarget, 30.0F, 30.0F);
+            }
+
+
+
+
+            }
+
+
+        }
+
+
+
+    class DoNothingGoal extends Goal {
+        public DoNothingGoal() {
+            this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.JUMP, Goal.Flag.LOOK));
+        }
+        public boolean canUse() {
+            return (level.isDay());
+        }
+
+        @Override
+        public void tick() {
+            setSilent(true);
+        }
+    }
     }
