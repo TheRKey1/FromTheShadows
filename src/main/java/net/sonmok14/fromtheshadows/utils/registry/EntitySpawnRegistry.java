@@ -19,7 +19,12 @@ public class EntitySpawnRegistry {
         List<MobSpawnSettings.SpawnerData> base = event.getSpawns().getSpawner(MobCategory.MONSTER);
         if (event.getCategory().equals(Biome.BiomeCategory.UNDERGROUND)) {
             base.add(new MobSpawnSettings.SpawnerData(EntityRegistry.NEHEMOTH.get(), 35,
-                    1, 1));
+                    1, 2));
+        }
+
+        if (event.getCategory().equals(Biome.BiomeCategory.byName("minecraft:nether_wastes"))) {
+            base.add(new MobSpawnSettings.SpawnerData(EntityRegistry.NEHEMOTH.get(), 10,
+                    1, 2));
         }
 
 

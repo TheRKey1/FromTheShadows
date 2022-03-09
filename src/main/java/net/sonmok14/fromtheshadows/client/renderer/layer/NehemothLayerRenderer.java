@@ -15,7 +15,7 @@ public class NehemothLayerRenderer extends GeoLayerRenderer {
     // A resource location for the texture of the layer. This will be applied onto pre-existing cubes on the model
     private static final ResourceLocation LAYER = new ResourceLocation(Fromtheshadows.MODID, "textures/entity/nehemoth_eye.png");
     // A resource location for the model of the entity. This model is put on top of the normal one, which is then given the texture
-    private static final ResourceLocation MODEL = new ResourceLocation(Fromtheshadows.MODID, "geo/dracan.geo.json");
+    private static final ResourceLocation MODEL = new ResourceLocation(Fromtheshadows.MODID, "geo/nehemoth.geo.json");
 
     @SuppressWarnings("unchecked")
     public NehemothLayerRenderer(IGeoRenderer<?> entityRendererIn) {

@@ -26,6 +26,11 @@ public class NehemothRenderer extends GeoEntityRenderer<NehemothEntity> {
     }
 
     @Override
+    protected float getDeathMaxRotation(NehemothEntity entityLivingBaseIn) {
+        return 0;
+    }
+
+    @Override
     public RenderType getRenderType(NehemothEntity animatable, float partialTicks, PoseStack stack,
                                     MultiBufferSource renderTypeBuffer, VertexConsumer vertexBuilder, int packedLightIn,
                                     ResourceLocation textureLocation) {

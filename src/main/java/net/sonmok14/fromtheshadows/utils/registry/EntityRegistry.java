@@ -26,5 +26,4 @@ public class EntityRegistry {
             .sized(1.0f, 1.0f)
             .setUpdateInterval(Integer.MAX_VALUE)
             .build(Fromtheshadows.MODID + ":screen_shake"));
-
 }

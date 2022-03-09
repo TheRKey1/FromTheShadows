@@ -9,27 +9,35 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.*;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.IronGolem;
-import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.animal.axolotl.Axolotl;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.monster.piglin.Piglin;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
+import net.sonmok14.fromtheshadows.utils.registry.ItemRegistry;
 import net.sonmok14.fromtheshadows.utils.registry.SoundRegistry;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.IAnimatable;
@@ -68,73 +76,82 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         return LivingEntity.createLivingAttributes()
                 .add(Attributes.FOLLOW_RANGE, 25.0D)
                 .add(Attributes.MOVEMENT_SPEED, 0.35D)
-                .add(Attributes.MAX_HEALTH, 50.0D)
-                .add(Attributes.ATTACK_DAMAGE, 8D)
+                .add(Attributes.MAX_HEALTH, 60.0D)
+                .add(Attributes.ATTACK_DAMAGE, 10D)
                 .add(Attributes.ATTACK_KNOCKBACK, 0.0D)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 5.0D)
-                .add(Attributes.ARMOR, 5.0D)
-                .add(Attributes.ARMOR_TOUGHNESS, 4.0D)
+                .add(Attributes.KNOCKBACK_RESISTANCE, 9.0D)
+                .add(Attributes.ARMOR, 8.0D)
+                .add(Attributes.ARMOR_TOUGHNESS, 5.0D)
                 .add(Attributes.ATTACK_SPEED, 2.0D);
     }
+
 
     private AnimationFactory factory = new AnimationFactory(this);
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
-        if (!isSilent()) {
+        float f = getBrightness();
+        BlockPos blockpos = new BlockPos(getX(), getEyeY(), getZ());
+            if (!isSilent()) {
                 if (event.isMoving() && isAggressive() && attackID == 0) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.run", true));
-                return PlayState.CONTINUE;
-            }
-            if (attackID == 3) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.roar", true));
-                return PlayState.CONTINUE;
-            }
-            if (!this.isImmobile()) {
-                if (attackID == 1) {
-                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.meleeattack", true));
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.run", true));
+                    return PlayState.CONTINUE;
+                }
+                if (attackID == 3) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.roar", true));
+                    return PlayState.CONTINUE;
+                }
+                if (!this.isImmobile()) {
+                    if (attackID == 1) {
+                        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.meleeattack", true));
+                        return PlayState.CONTINUE;
+                    }
+
+                    if (attackID == 2) {
+                        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.attack", true));
+                        return PlayState.CONTINUE;
+                    }
+                }
+                if (attackID == 4 && isOnGround() && this.attacktick > 8) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.smash", true));
                     return PlayState.CONTINUE;
                 }
 
-                if (attackID == 2) {
-                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.attack", true));
+                if (!isAlive() || getHealth() == 0.1 || isDeadOrDying()) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.death", false));
+                    return PlayState.CONTINUE;
+                }
+
+                if (attackID == 4 && !isOnGround()) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.jump", true));
+                    return PlayState.CONTINUE;
+                }
+
+                if (attackID == 5 && attacktick < 55) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.guard", true));
+                    return PlayState.CONTINUE;
+                }
+                if (attackID == 5 && attacktick > 55) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.bulk", true));
+                    return PlayState.CONTINUE;
+                }
+
+                if (isImmobile() && isAlive()) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.stun", true));
+                    return PlayState.CONTINUE;
+                }
+
+                if (event.isMoving()) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.walk", true));
+                    return PlayState.CONTINUE;
+                }
+
+                if (!event.isMoving() && attackID == 0) {
+                    event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.ldle", true));
                     return PlayState.CONTINUE;
                 }
             }
-            if (attackID == 4 && isOnGround() && this.attacktick > 8) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.smash", true));
-                return PlayState.CONTINUE;
-            }
 
-            if (attackID == 4 && !isOnGround()) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.jump", true));
-                return PlayState.CONTINUE;
-            }
-
-            if (attackID == 5 && attacktick < 55) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.guard", true));
-                return PlayState.CONTINUE;
-            }
-            if (attackID == 5 && attacktick > 55) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.bulk", true));
-                return PlayState.CONTINUE;
-            }
-
-            if (isImmobile()) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.stun", true));
-                return PlayState.CONTINUE;
-            }
-
-            if (event.isMoving()) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.walk", true));
-                return PlayState.CONTINUE;
-            }
-
-            if (!event.isMoving() && attackID == 0) {
-                event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.ldle", true));
-                return PlayState.CONTINUE;
-                }
-            }
-        else if (isSilent()) {
+        else if(isSilent()) {
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.dracan.stop1", true));
             return PlayState.CONTINUE;
         }
@@ -166,9 +183,16 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         return factory;
     }
 
+    @Override
+    protected void tickDeath() {
+        ++this.deathTime;
+        if (this.deathTime == 50) {
+            this.remove(RemovalReason.KILLED);
+            this.dropExperience();
+        }
+    }
 
-
-    //animation
+//animation
 
 
     //ai
@@ -185,18 +209,19 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
         this.goalSelector.addGoal(0, new GuardandRevengeGoal(this));
         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 6.0F));
         this.goalSelector.addGoal(10, new LookAtPlayerGoal(this, Mob.class, 8.0F));
+        this.targetSelector.addGoal(7, new NearestAttackableTargetGoal<>(this, Piglin.class, true));
+        this.targetSelector.addGoal(6, new NearestAttackableTargetGoal<>(this, Axolotl.class, true));
         this.targetSelector.addGoal(5, new NearestAttackableTargetGoal<>(this, Raider.class, true));
         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Player.class, true));
         this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, true, (p_199899_) -> {
             return !p_199899_.isBaby();
         }));
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
-        this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, NehemothEntity.class)).setAlertOthers());
+        this.targetSelector.addGoal(1, (new HurtByTargetGoal(this).setAlertOthers(NehemothEntity.class)));
         this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, IronGolem.class, true));
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.5D));
     }
-
     public void setAttackID(int id) {
         this.attackID = id;
         this.attacktick = 0;
@@ -238,12 +263,12 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                 getTarget().hurt(DamageSource.mobAttack(this), (float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
                 if (this.attackID == 2 && !getTarget().isBlocking()) {
                     this.level.playSound((Player) null, this.getX(), this.getY(), this.getZ(), SoundEvents.STRIDER_EAT, this.getSoundSource(), 2F, 0.3F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F);
-                    heal((float) getTarget().getAttributeBaseValue(Attributes.MAX_HEALTH) - getTarget().getHealth());
+                    heal((float) this.getAttributeValue(Attributes.ATTACK_DAMAGE));
                 }
 
 
 
-                if (this.attackID == 2 && getTarget().isBlocking()) {
+                if (this.attackID == 2 && getTarget().isBlocking() && this.random.nextDouble() < 0.5D){
                     blockedByShield(this);
                     ejectPassengers();
                     attacktick = 19;
@@ -258,21 +283,19 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                 }
                 setShiftKeyDown(false);
                 ScreenShakeEntity.ScreenShake(level, this.position(), 15, 0.2f, 0, 10);
+                roar();
                 this.playSound(SoundEvents.GENERIC_EXPLODE, 2f, 1F + this.getRandom().nextFloat() * 0.1F);
                 if (this.level.isClientSide) {
                     BlockState block = level.getBlockState(blockPosition().below());
-                    for (int i1 = 0; i1 < 20 + random.nextInt(12); i1++) {
-                        double DeltaMovementX = getRandom().nextGaussian() * 0.07D;
-                        double DeltaMovementY = getRandom().nextGaussian() * 0.07D;
-                        double DeltaMovementZ = getRandom().nextGaussian() * 0.07D;
-                        float angle = (0.01745329251F * this.yBodyRot) + i1;
-                        double extraX = 22F * Mth.sin((float) (Math.PI + angle));
-                        double extraY = 0.3F;
-                        double extraZ = 22F * Mth.cos(angle);
-                        this.level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, block), this.getX() + extraX, this.getY() + extraY, this.getZ() + extraZ, DeltaMovementX, DeltaMovementY, DeltaMovementZ);
+                    for(int j = 0; j < 3 * 8; ++j) {
+                        float f = this.random.nextFloat() * ((float)Math.PI * 4F);
+                        float f1 = this.random.nextFloat() * 0.8F + 0.8F;
+                        float f2 = Mth.sin(f) * (float)3 * 0.8F * f1;
+                        float f3 = Mth.cos(f) * (float)3 * 0.8F * f1;
+                        this.level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, block), this.getX() + (double)f2, this.getY(), this.getZ() + (double)f3, 0.0D, 0.0D, 0.0D);
+                    }
                     }
                 }
-            }
 
             if (this.attacktick == 2) {
 
@@ -297,10 +320,18 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
                     ScreenShakeEntity.ScreenShake(level, this.position(), 20, 0.2f, 20, 10);
                 }
             }
+            float f = getBrightness();
+            BlockPos blockpos = new BlockPos(getX(), getEyeY(), getZ());
+
 
         if (this.stunnedTick > 0) {
             --this.stunnedTick;
             this.stunEffect();
+        }
+
+        if(!level.canSeeSky(blockpos) &&isSilent())
+        {
+            setSilent(false);
         }
 
         }
@@ -353,6 +384,35 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
             p_33361_.hurtMarked = true;
 
+    }
+
+    public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        ItemStack itemstack = player.getItemInHand(hand);
+        Item item = itemstack.getItem();
+        if(itemstack.is(Items.GLASS_BOTTLE) && this.getHealth() < 10 && !this.isSilent())
+        {
+
+            boolean flag = this.hurt(DamageSource.mobAttack(player), 2);
+            this.hurt(DamageSource.MAGIC, (float) 2);
+            if(flag)
+            {
+                itemstack.shrink(1);
+                player.playSound(SoundEvents.BOTTLE_FILL, 0.1F, 1.0F);
+                player.getTicksUsingItem();
+                if (itemstack.isEmpty()) {
+                    player.setItemInHand(hand, new ItemStack(ItemRegistry.BOTTLE_OF_BLOOD.get()));
+                } else if (!player.getInventory().add(new ItemStack(ItemRegistry.BOTTLE_OF_BLOOD.get()))) {
+
+                    player.drop(new ItemStack(ItemRegistry.BOTTLE_OF_BLOOD.get()), false);
+                }
+            }
+        }
+        else
+        {
+            return InteractionResult.FAIL;
+        }
+
+            return super.mobInteract(player, hand);
     }
 
     @Nullable
@@ -469,14 +529,13 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
             return false;
         }
 
-        if(level.isDay())
-        {
-            this.playSound(SoundEvents.SCULK_SENSOR_HIT, 1f, 1F + this.getRandom().nextFloat() * 0.3F);
+        if(this.isSilent() && p_21016_ != DamageSource.OUT_OF_WORLD) {
             return false;
         }
 
         return super.hurt(p_21016_, p_21017_);
     }
+
 
     //tick
 
@@ -640,7 +699,7 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
 
 
 
-               roar();
+
             }
 
 
@@ -738,7 +797,9 @@ public class NehemothEntity extends Monster implements Enemy, IAnimatable {
             this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.JUMP, Goal.Flag.LOOK));
         }
         public boolean canUse() {
-            return (level.isDay());
+            float f = getBrightness();
+            BlockPos blockpos = new BlockPos(getX(), getEyeY(), getZ());
+            return (level.isDay() && level.canSeeSky(blockpos));
         }
 
         @Override

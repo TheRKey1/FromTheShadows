@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.0'
+version = '1.1'
 group = 'net.sonmok14.fromtheshadows' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'fromtheshadows'
 
@@ -31,6 +31,9 @@ minecraft {
     // These can be tweaked, removed, or duplicated as needed.
     runs {
         client {
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
             workingDirectory project.file('run')
 
          
@@ -117,11 +120,13 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    maven { url 'https://maven.blamejared.com' }
       maven { url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
 }
 
 dependencies {
-  
+    runtimeOnly fg.deobf("vazkii.patchouli:Patchouli:1.18.1-65")
+    compileOnly fg.deobf("vazkii.patchouli:Patchouli:1.18.1-65:api")
     minecraft 'net.minecraftforge:forge:1.18.1-39.1.0'
   implementation fg.deobf('software.bernie.geckolib:geckolib-1.18-forge:3.0.11')
 }
@@ -132,7 +137,7 @@ jar {
         attributes([
                 "Specification-Title"     : "from-the-shadows",
                 "Specification-Vendor"    : "sonmok14",
-                "Specification-Version"   : "1.0", // We are version 1 of ourselves
+                "Specification-Version"   : "1.1", // We are version 1 of ourselves
                 "Implementation-Title"    : project.name,
                 "Implementation-Version"  : project.jar.archiveVersion,
                 "Implementation-Vendor"   : "sonmok14",

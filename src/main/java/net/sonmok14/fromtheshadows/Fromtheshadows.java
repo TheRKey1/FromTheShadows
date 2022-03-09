@@ -48,6 +48,7 @@ public class Fromtheshadows
         EntityRegistry.ENTITY_TYPES.register(modEventBus);
         SoundRegistry.MOD_SOUNDS.register(modEventBus);
         ItemRegistry.ITEMS.register(modEventBus);
+
     }
 
     public static CommonProxy PROXY = DistExecutor.safeRunForDist(() -> ClientProxy::new, () -> CommonProxy::new);
